@@ -6,7 +6,6 @@ use warnings;
 
 use Array::Compare;
 use Sub::Uplevel;
-use List::Util qw/first/;
 
 require Exporter;
 
@@ -23,7 +22,7 @@ our @EXPORT = qw(
        warning_like warnings_like
 );
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use Test::Builder;
 my $Tester = Test::Builder->new;
@@ -76,7 +75,8 @@ sub _to_array_if_necessary {
 sub _canonical_got_warning {
     my ($called_from, $msg) = @_;
     my $warn_kind = $called_from eq 'Carp' ? 'carped' : 'warn';
-    return {$warn_kind => first {"$_\n"} split /\n/, $msg};
+    my @warning_stack = split /\n/, $msg;     # some stuff of uplevel is included
+    return {$warn_kind => $warning_stack[0]}; # return only the real message
 }
 
 sub _canonical_exp_warning {
