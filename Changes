@@ -1,5 +1,10 @@
 Revision history for Perl extension Test::Warn.
 
+0.06  Wed Jul 31
+        - used a patch given by chromatic and Schwern
+          to remove Dependancy of Switch
+        - fixed a typo in the doc
+
 0.05  Thu Jul 25
         - implemented the warnings category feature
           warning_like {foo()} 'syntax', "Test for any syntax warning, given by the standard perl distribution";

@@ -1,10 +1,14 @@
 #!/usr/bin/perl
 
+BEGIN {
+	chdir 't' if -d 't';
+	unshift @INC, '../blib/lib';
+}
+
 use strict;
 use warnings;
 
 use Carp;
-use Switch 'Perl6';
 
 use constant SUBTESTS_PER_TESTS  => 6;
 
@@ -13,7 +17,7 @@ use constant TESTS =>(
     ["not ok", "my warning", "another warning", "another warning instead of my warning"],
     ["not ok", "warning general not", "warning general", "quite only a sub warning"],
     ["not ok", undef, "a warning", "no warning, but expected one"],
-    ["not ok", "a warning", undef, "warning, but didn't expected one"],
+    ["not ok", "a warning", undef, "warning, but didn't expect one"],
     ["ok", undef, undef, "no warning"],
     ["ok", '$!"%&/()=', '$!"%&/()=', "warning with crazy letters"],
     ["not ok", "warning 1|warning 2", "warning1", "more than one warning"]
@@ -38,11 +42,9 @@ sub _make_carp {
 use constant CARP_LEVELS => (0 .. 2);
 sub _create_exp_warning {
     my ($carplevel, $warning) = @_;
-    given ($carplevel) {
-        when 0      {return $warning}
-        when 1      {return {carped => $warning}}
-        when 2      {return {carped => [$warning]}}
-    }
+    return $warning               if $carplevel == 0;
+    return {carped => $warning}   if $carplevel == 1;
+    return {carped => [$warning]} if $carplevel == 2;
 }
 
 test_warning_is(@$_) foreach  TESTS();

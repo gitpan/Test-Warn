@@ -1,10 +1,14 @@
 #!/usr/bin/perl
 
+BEGIN {
+	chdir 't' if -d 't';
+	unshift @INC, '../blib/lib';
+}
+
 use strict;
 use warnings;
 
 use Carp;
-use Switch 'Perl6';
 
 use constant SUBTESTS_PER_TESTS  => 16;
 
@@ -13,7 +17,7 @@ use constant TESTS =>(
     ["not ok", ["my warning"], ["another warning"], "another warning instead of my warning"],
     ["not ok", ["warning general not"], ["warning general"], "quite only a sub warning"],
     ["not ok", [], ["a warning"], "no warning, but expected one"],
-    ["not ok", ["a warning"], [], "warning, but didn't expected on"],
+    ["not ok", ["a warning"], [], "warning, but didn't expect one"],
     [    "ok", [], [], "no warning"],
     [    "ok", ['$!"%&/()='], ['$!"%&/()='], "warning with crazy letters"],
     ["not ok", ["warning 1","warning 2"], ["warning 1"], "more than one warning (1)"],
@@ -43,12 +47,11 @@ sub _make_carp {
 use constant CARP_LEVELS => (0 .. 3);
 sub _create_exp_warning {
     my ($carplevel, $warning) = @_;
-    given ($carplevel) {
-        when 0  {return $warning}  # ['x', 'y', 'z']
-        when 1  {return [map { {carped => $_} } @$warning]} 
-        when 2  {return {carped => $warning} }
-        when 3  {return [{carped => $warning}]}
-    }
+    # ['x', 'y', 'z']
+    return $warning                           if $carplevel == 0;
+    return [map { {carped => $_} } @$warning] if $carplevel == 1;
+    return {carped => $warning}               if $carplevel == 2;
+    return [{carped => $warning}]             if $carplevel == 3;
 }
 
 my $i = 0;

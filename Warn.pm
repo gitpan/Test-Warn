@@ -18,8 +18,8 @@ Test::Warn - Perl extension to test methods for warnings
   warning_is    {foo()} {carped => 'didn't found the right parameters'};
   warnings_like {foo()} [qr/undefined/,qr/undefined/,{carped => qr/no result/i}];
   
-  warning_like {foo(undef)}                'uninitialized';
-  warning_like {bar(file => '/etc/passwd'} 'io';
+  warning_like {foo(undef)}                 'uninitialized';
+  warning_like {bar(file => '/etc/passwd')} 'io';
 
   warning_like {eval q/"$x"; $x;/} 
                [qw/void uninitialized/], 
@@ -196,8 +196,8 @@ Have a look to the similar L<Test::Exception> module.
 
 =head1 THANKS
 
-Many thanks to Adrian Howard, Chromatic and Michael G. Schwern,
-who has given me a lot of ideas.
+Many thanks to Adrian Howard, chromatic and Michael G. Schwern,
+who have given me a lot of ideas.
 
 =head1 AUTHOR
 
@@ -221,8 +221,6 @@ use warnings;
 
 use Array::Compare;
 use Sub::Uplevel;
-use Data::Dumper;
-use Switch 'Perl6';
 
 require Exporter;
 
@@ -239,7 +237,7 @@ our @EXPORT = qw(
        warning_like warnings_like
 );
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use Test::Builder;
 my $Tester = Test::Builder->new;
