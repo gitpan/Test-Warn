@@ -4,8 +4,9 @@ use strict;
 use warnings;
 
 use Carp;
+use Switch 'Perl6';
 
-use constant SUBTESTS_PER_TESTS  => 8;
+use constant SUBTESTS_PER_TESTS  => 16;
 
 use constant TESTS =>(
     [    "ok", ["my warning"], ["my warning"], "standard warning to find"],
@@ -39,15 +40,26 @@ sub _make_carp {
     carp $_ for @_;
 }
 
+use constant CARP_LEVELS => (0 .. 3);
+sub _create_exp_warning {
+    my ($carplevel, $warning) = @_;
+    given ($carplevel) {
+        when 0  {return $warning}  # ['x', 'y', 'z']
+        when 1  {return [map { {carped => $_} } @$warning]} 
+        when 2  {return {carped => $warning} }
+        when 3  {return [{carped => $warning}]}
+    }
+}
+
 my $i = 0;
 test_warnings_are(@$_) foreach TESTS();
 
 sub test_warnings_are {
     my ($ok, $msg, $exp_warning, $testname) = @_;
-    for my $do_carp (0,1) {
-        *_found_msg         = $do_carp ? *_found_carp_msg : *_found_warn_msg;
-        *_exp_msg           = $do_carp ? *_exp_carp_msg   : *_exp_warn_msg;
-        *_make_warn_or_carp = $do_carp ? *_make_carp      : *_make_warn;
+    for my $carp (CARP_LEVELS) {
+        *_found_msg         = $carp ? *_found_carp_msg : *_found_warn_msg;
+        *_exp_msg           = $carp ? *_exp_carp_msg   : *_exp_warn_msg;
+        *_make_warn_or_carp = $carp ? *_make_carp      : *_make_warn;
         for my $t (undef, $testname) {
             for my $is_or_are (qw/is are/) {
                 test_out "$ok 1" . ($t ? " - $t" : "");
@@ -56,7 +68,7 @@ sub test_warnings_are {
                     test_diag  _found_msg(@$msg);
                     test_diag  _exp_msg(@$exp_warning);
                 }
-                my $ew = $do_carp ? [map { +{carped => $_} } @$exp_warning ] : $exp_warning;
+                my $ew = _create_exp_warning($carp, $exp_warning);
                 $is_or_are eq 'is' ? warning_is {_make_warn_or_carp(@$msg)} $ew, $t : warnings_are {_make_warn_or_carp(@$msg)} $ew, $t;
                 test_test  "$testname (with" . ($_ ? "" : "out") . " a testname)";
             }

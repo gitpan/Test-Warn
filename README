@@ -1,4 +1,4 @@
-Test/Warn version 0.02
+Test/Warn version 0.04
 ======================
 
 INSTALLATION
@@ -19,6 +19,8 @@ Test::Exception
 Array::Compare
 Sub::Uplevel
 List::Util
+Switch
+
 
 SYNOPSIS
       use Test::Warn;
@@ -85,9 +87,11 @@ DESCRIPTION
         Please read also the notes to warning_is as these methods are only
         aliases.
 
-        At the moment, more than one tests for carped warnings look that
-        way: "warnings_are {carp "c1"; carp "c2"} [{carped =" 'c1'},{carped
-        => 'c2'}];>. I'm working for a better solution.
+        If you want more than one tests for carped warnings look that way:
+        "warnings_are {carp "c1"; carp "c2"} {carped =" ['c1','c2'];> or
+        "warnings_are {foo()} ["Warning 1", {carped =" ["Carp 1", "Carp
+        2"]}, "Warning 2"]>. Note that "{carped =" ...}> has always to be a
+        hash ref.
 
     warning_like BLOCK REGEXP, TEST_NAME
         Tests that BLOCK gives exactly one warning and it can be matched to
@@ -135,34 +139,6 @@ DESCRIPTION
     "warning_is", "warnings_are", "warning_like", "warnings_like" by
     default.
 
-BUGS
-    This bad documentation, I'll make it better the next time.
-
-    I only tested it with the simple "warn" function. It should work also
-    with "Carp::carp" method, but I think, there will be problems using
-    <Carp::clucks> or any other warning that gives a devel stack.
-
-    If a method has it's own warn handler, overwriting $SIG{__WARN__}, my
-    test warning methods won't get these warnings.
-
-TODO
-    Improve this documentation.
-
-    Allow to define to test for more then one carping more convienience,
-    like:
-
-      warnings_like {foo()} [qr/division by zero/i, 
-                             {carped => qr/no result/i,
-                                        qr/used default output/i}];
-
-    "warning_like BLOCK CATEGORY, TEST_NAME" where CATEGORY is a warning
-    category defined in perllexwarn.
-
-    The code has many parts doubled. This is really awkward and has to be
-    changed.
-
-    Please feel free to suggest me any improvements.
-
 SEE ALSO
     Have a look to the similar Test::Exception module.
 
@@ -178,4 +154,5 @@ COPYRIGHT AND LICENSE
 
     This library is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.
+
 

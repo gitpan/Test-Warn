@@ -6,6 +6,7 @@ use warnings;
 
 use Array::Compare;
 use Sub::Uplevel;
+use Data::Dumper;
 
 require Exporter;
 
@@ -22,7 +23,7 @@ our @EXPORT = qw(
        warning_like warnings_like
 );
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use Test::Builder;
 my $Tester = Test::Builder->new;
@@ -81,7 +82,13 @@ sub _canonical_got_warning {
 
 sub _canonical_exp_warning {
     my ($exp) = @_;
-    return (ref($exp) eq 'HASH') ? $exp : +{'warn' => $exp};
+    if (ref($exp) eq 'HASH') {             # could be {carped => ...}
+        my $to_carp = $exp->{carped} or return; # undefined message are ignored
+        return (ref($to_carp) eq 'ARRAY')  # is {carped => [ ..., ...] }
+            ? map({ {carped => $_} } grep {defined $_} @$to_carp)
+            : +{carped => $to_carp};
+    }
+    return {warn => $exp};
 }
 
 sub _cmp_got_to_exp_warning {
@@ -222,10 +229,10 @@ then the test succeeds iff the BLOCK doesn't give any warning.
 
 Please read also the notes to warning_is as these methods are only aliases.
 
-At the moment,
-more than one tests for carped warnings look that way:
-C<warnings_are {carp "c1"; carp "c2"} [{carped => 'c1'},{carped => 'c2'}];>.
-I'm working for a better solution.
+If you want more than one tests for carped warnings look that way:
+C<warnings_are {carp "c1"; carp "c2"} {carped => ['c1','c2'];> or
+C<warnings_are {foo()} ["Warning 1", {carped => ["Carp 1", "Carp 2"]}, "Warning 2"]>.
+Note that C<{carped => ...}> has always to be a hash ref.
 
 =item warning_like BLOCK REGEXP, TEST_NAME
 
@@ -296,13 +303,6 @@ my test warning methods won't get these warnings.
 =head1 TODO
 
 Improve this documentation.
-
-Allow to define to test for more then one carping more convienience,
-like: 
-
-  warnings_like {foo()} [qr/division by zero/i, 
-                         {carped => qr/no result/i,
-                                    qr/used default output/i}];
 
 C<warning_like BLOCK CATEGORY, TEST_NAME>
 where CATEGORY is a warning category defined in perllexwarn.

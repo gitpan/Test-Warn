@@ -1,5 +1,14 @@
 Revision history for Perl extension Test::Warn.
 
+0.04  Tue Jul 16
+        - implemented the possibility of saying
+          warning_like {foo()} {carped => ['x', 'y', 'z']}, "Warnings with x, y and z"
+          instead of
+          warning_like {foo()} [{carped => 'x'},
+                                {carped => 'y'},
+                                {carped => 'z'}],           "Warnings with x, y and z, too"
+        - added Dependancy to Switch
+
 0.03  Mon Jul 15
         - removed bug that occured with some versions of perl
           Something something like

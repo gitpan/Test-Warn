@@ -9,7 +9,8 @@ WriteMakefile(
                             Test::Exception       => 0,
                             Test::Builder         => 0.13,
                             Test::Builder::Tester => 0,
-                            Sub::Uplevel          => 0
+                            Sub::Uplevel          => 0,
+                            Switch                => 0
                             }, # e.g., Module::Name => 1.1
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'Warn.pm', # retrieve abstract from module

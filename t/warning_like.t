@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Carp;
+use Switch 'Perl6';
 
 use constant TESTS =>(
     ["ok", "my warning", "my", "standard warning to find"],
@@ -15,7 +16,7 @@ use constant TESTS =>(
     ["ok", '$!"%&/()=', '\$\!\"\%\&\/\(\)\=', "warning with crazy letters"],
     ["not ok", "warning 1|warning 2", "warning1", "more than one warning"]
 );
-use constant SUBTESTS_PER_TESTS  => 8;
+use constant SUBTESTS_PER_TESTS  => 12;
 
 use constant EXTRA_TESTS         => 1;
 
@@ -35,18 +36,26 @@ sub _make_carp {
     carp $_ for grep $_, split m:\|:, (shift() || "");
 }
 
+use constant CARP_LEVELS => (0 .. 2);
+sub _create_exp_warning {
+    my ($carplevel, $warning) = @_;
+    given ($carplevel) {
+        when 0      {return $warning}
+        when 1      {return {carped => $warning}}
+        when 2      {return {carped => [$warning]}}
+    }
+}
 
-my $i = 0;
 test_warning_like(@$_) foreach TESTS();
 dies_ok (sub {warning_like {warn "no regexes should be found"} 'no regex'}, 
          "Tried to call warning_like as regex");
 
 sub test_warning_like {
     my ($ok, $msg, $exp_warning, $testname) = @_;
-    for my $do_carp (0,1) {
-        *_found_msg         = $do_carp ? *_found_carp_msg : *_found_warn_msg;
-        *_exp_msg           = $do_carp ? *_exp_carp_msg   : *_exp_warn_msg;
-        *_make_warn_or_carp = $do_carp ? *_make_carp      : *_make_warn;
+    for my $carp (CARP_LEVELS) {
+        *_found_msg         = $carp ? *_found_carp_msg : *_found_warn_msg;
+        *_exp_msg           = $carp ? *_exp_carp_msg   : *_exp_warn_msg;
+        *_make_warn_or_carp = $carp ? *_make_carp      : *_make_warn;
         for my $t (undef, $testname) {
             my @regexes = $exp_warning ? (qr/$exp_warning/, "/$exp_warning/")
                                        : (undef, undef);  # simpler to count the tests
@@ -57,7 +66,7 @@ sub test_warning_like {
                     test_diag  _found_msg($_) for ($msg ? (split m-\|-, $msg) : $msg);
                     test_diag  _exp_msg($regex);
                 }
-                warning_like {_make_warn_or_carp($msg)} (($do_carp && $regex) ? {carped => $regex} : $regex), $t;
+                warning_like {_make_warn_or_carp($msg)} _create_exp_warning($carp, $regex), $t;
                 test_test  "$testname (with" . ($_ ? "" : "out") . " a testname)";
             }
         }

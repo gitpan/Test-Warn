@@ -4,15 +4,16 @@ use strict;
 use warnings;
 
 use Carp;
+use Switch 'Perl6';
 
-use constant SUBTESTS_PER_TESTS  => 4;
+use constant SUBTESTS_PER_TESTS  => 6;
 
 use constant TESTS =>(
     ["ok", "my warning", "my warning", "standard warning to find"],
     ["not ok", "my warning", "another warning", "another warning instead of my warning"],
     ["not ok", "warning general not", "warning general", "quite only a sub warning"],
     ["not ok", undef, "a warning", "no warning, but expected one"],
-    ["not ok", "a warning", undef, "warning, but didn't expected on"],
+    ["not ok", "a warning", undef, "warning, but didn't expected one"],
     ["ok", undef, undef, "no warning"],
     ["ok", '$!"%&/()=', '$!"%&/()=', "warning with crazy letters"],
     ["not ok", "warning 1|warning 2", "warning1", "more than one warning"]
@@ -20,6 +21,7 @@ use constant TESTS =>(
 
 use Test::Builder::Tester tests  => TESTS() * SUBTESTS_PER_TESTS;
 use Test::Warn;
+use Test::Exception;
 
 Test::Builder::Tester::color 'on';
 
@@ -33,15 +35,24 @@ sub _make_carp {
     carp $_ for grep $_, split m:\|:, (shift() || "");
 }
 
-my $i = 0;
+use constant CARP_LEVELS => (0 .. 2);
+sub _create_exp_warning {
+    my ($carplevel, $warning) = @_;
+    given ($carplevel) {
+        when 0      {return $warning}
+        when 1      {return {carped => $warning}}
+        when 2      {return {carped => [$warning]}}
+    }
+}
+
 test_warning_is(@$_) foreach  TESTS();
 
 sub test_warning_is {
     my ($ok, $msg, $exp_warning, $testname) = @_;
-    for my $do_carp (0,1) {
-        *_found_msg         = $do_carp ? *_found_carp_msg : *_found_warn_msg;
-        *_exp_msg           = $do_carp ? *_exp_carp_msg   : *_exp_warn_msg;
-        *_make_warn_or_carp = $do_carp ? *_make_carp      : *_make_warn;
+    for my $carp (CARP_LEVELS) {
+        *_found_msg         = $carp ? *_found_carp_msg : *_found_warn_msg;
+        *_exp_msg           = $carp ? *_exp_carp_msg   : *_exp_warn_msg;
+        *_make_warn_or_carp = $carp ? *_make_carp      : *_make_warn;
         for my $t (undef, $testname) {
             test_out "$ok 1" . ($t ? " - $t" : "");
             if ($ok =~ /not/) {
@@ -49,11 +60,12 @@ sub test_warning_is {
                 test_diag  _found_msg($_) for ($msg ? (split m-\|-, $msg) : $msg);
                 test_diag  _exp_msg($exp_warning);
             }
-            warning_is {_make_warn_or_carp($msg)} (($do_carp && $exp_warning) ? {carped => $exp_warning} : $exp_warning), $t;
+            warning_is {_make_warn_or_carp($msg)} _create_exp_warning($carp, $exp_warning), $t;
             test_test  "$testname (with" . ($_ ? "" : "out") . " a testname)";
         }
     }
 }
+
 
 sub _found_warn_msg {
     defined($_[0]) 
