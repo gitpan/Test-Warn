@@ -1,4 +1,4 @@
-Test/Warn version 0.05
+Test/Warn version 0.07
 ======================
 
 INSTALLATION
@@ -20,6 +20,7 @@ Array::Compare
 Sub::Uplevel
 List::Util
 Tree::DAG_Node
+File::Spec
 
 SYNOPSIS
       use Test::Warn;

@@ -16,6 +16,9 @@ sub foo {
     warn "Warning 4";
 }
 
+use File::Spec;
+my $tcarped = File::Spec->catfile('t','carped.t');
+
 test_out "ok 1";
 warnings_like {foo()} [map {qr/$_/} (1 .. 4)];
 test_test "Warnings and Carpings mixed, asked only for like warnings";
@@ -23,10 +26,10 @@ test_test "Warnings and Carpings mixed, asked only for like warnings";
 test_out "not ok 1";
 test_fail +10;
 test_diag 
-"found warning: Warning 1 at t/carped.t line 13.",
-"found carped warning: Carping 2 at t/carped.t line 14",
-"found carped warning: Carping 3 at t/carped.t line 15",
-"found warning: Warning 4 at t/carped.t line 16.",
+"found warning: Warning 1 at $tcarped line 13.",
+"found carped warning: Carping 2 at $tcarped line 14",
+"found carped warning: Carping 3 at $tcarped line 15",
+"found warning: Warning 4 at $tcarped line 16.",
 "expected to find carped warning: (?-xism:1)",
 "expected to find carped warning: (?-xism:2)",
 "expected to find carped warning: (?-xism:3)",
@@ -46,10 +49,10 @@ test_test "Warnings and Carpings mixed, asked only for warnings";
 test_out "not ok 1";
 test_fail +10;
 test_diag 
-"found warning: Warning 1 at t/carped.t line 13.",
-"found carped warning: Carping 2 at t/carped.t line 14",
-"found carped warning: Carping 3 at t/carped.t line 15",
-"found warning: Warning 4 at t/carped.t line 16.",
+"found warning: Warning 1 at $tcarped line 13.",
+"found carped warning: Carping 2 at $tcarped line 14",
+"found carped warning: Carping 3 at $tcarped line 15",
+"found warning: Warning 4 at $tcarped line 16.",
 "expected to find carped warning: Warning 1",
 "expected to find carped warning: Carping 2",
 "expected to find carped warning: Carping 3",

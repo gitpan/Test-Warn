@@ -237,7 +237,7 @@ our @EXPORT = qw(
        warning_like warnings_like
 );
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use Test::Builder;
 my $Tester = Test::Builder->new;
