@@ -1,4 +1,4 @@
-Test/Warn version 0.04
+Test/Warn version 0.05
 ======================
 
 INSTALLATION
@@ -20,7 +20,7 @@ Array::Compare
 Sub::Uplevel
 List::Util
 Switch
-
+Tree::DAG_Node
 
 SYNOPSIS
       use Test::Warn;
@@ -37,9 +37,12 @@ SYNOPSIS
       warning_is    {foo()} {carped => 'didn't found the right parameters'};
       warnings_like {foo()} [qr/undefined/,qr/undefined/,{carped => qr/no result/i}];
   
-      [NOT IMPLEMENTED YET]
       warning_like {foo(undef)}                'uninitialized';
       warning_like {bar(file => '/etc/passwd'} 'io';
+
+      warning_like {eval q/"$x"; $x;/} 
+                   [qw/void uninitialized/], 
+                   "some warnings at compile time";
 
 DESCRIPTION
     This module provides a few convenience methods for testing warning based
@@ -48,102 +51,18 @@ DESCRIPTION
     If you are not already familiar with the Test::More manpage now would be
     the time to go take a look.
 
-  FUNCTIONS
-    warning_is BLOCK STRING, TEST_NAME
-        Tests that BLOCK gives exactly the one specificated warning. The
-        test fails if the BLOCK warns more then one times or doesn't warn.
-        If the string is undef, then the tests succeeds iff the BLOCK
-        doesn't give any warning. Another way to say that there aren't ary
-        warnings in the block, is "warnings_are {foo()} [], "no warnings
-        in"".
-
-        If you want to test for a warning given by carp, You have to write
-        something like: "warning_is {carp "msg"} {carped =" 'msg'}, "Test
-        for a carped warning">. The test will fail, if a "normal" warning is
-        found instead of a "carped" one.
-
-        Note: "warn "foo"" would print something like "foo at -e line 1".
-        This method ignores everything after the at. That means, to match
-        this warning you would have to call "warning_is {warn "foo"} "foo",
-        "Foo succeeded"". If you need to test for a warning at an exactly
-        line, try better something like "warning_like {warn "foo"} qr/at
-        XYZ.dat line 5/".
-
-        warning_is and warning_are are only aliases to the same method. So
-        you also could write "warning_is {foo()} [], "no warning"" or
-        something similar. I decided me to give two methods to have some
-        better readable method names.
-
-        A true value is returned if the test succeeds, false otherwise.
-
-        The test name is optional, but recommended.
-
-    warnings_are BLOCK ARRAYREF, TEST_NAME
-        Tests to see that BLOCK gives exactly the specificated warnings. The
-        test fails if the BLOCK warns a different number than the size of
-        the ARRAYREf would have expected. If the ARRAYREF is equal to [],
-        then the test succeeds iff the BLOCK doesn't give any warning.
-
-        Please read also the notes to warning_is as these methods are only
-        aliases.
-
-        If you want more than one tests for carped warnings look that way:
-        "warnings_are {carp "c1"; carp "c2"} {carped =" ['c1','c2'];> or
-        "warnings_are {foo()} ["Warning 1", {carped =" ["Carp 1", "Carp
-        2"]}, "Warning 2"]>. Note that "{carped =" ...}> has always to be a
-        hash ref.
-
-    warning_like BLOCK REGEXP, TEST_NAME
-        Tests that BLOCK gives exactly one warning and it can be matched to
-        the given regexp. If the string is undef, then the tests succeeds
-        iff the BLOCK doesn't give any warning.
-
-        The REGEXP is matched after the whole warn line, which consists in
-        general of "WARNING at __FILE__ line __LINE__". So you can check for
-        a warning in at File Foo.pm line 5 with "warning_like {bar()} qr/at
-        Foo.pm line 5/, "Testname"". I don't know whether it's sensful to do
-        such a test :-( However, you should be prepared as a matching with
-        'at', 'file', '\d' or similar will always pass. Think to the
-        qr/^foo/ if you want to test for warning "foo something" in file
-        foo.pl.
-
-        You can also write the regexp in a string as "/.../" instead of
-        using the qr/.../ syntax. Note that the slashes are important in the
-        string, as strings without slashes are reserved for future versions
-        (to match warning categories as can be seen in the perllexwarn man
-        page).
-
-        Similar to "warning_is", you can test for warnings via "carp" with:
-        "warning_like {bar()} {carped =" qr/bar called too early/i};>
-
-        Similar to "warning_is"/"warnings_are", "warning_like" and
-        "warnings_like" are only aliases to the same methods.
-
-        A true value is returned if the test succeeds, false otherwise.
-
-        The test name is optional, but recommended.
-
+  FUNCTIONS - OVERVIEW
+    warning_is    BLOCK STRING,   TEST_NAME
+    warnings_are  BLOCK ARRAYREF, TEST_NAME
+    warning_like  BLOCK REGEXP,   TEST_NAME
+    warning_like  BLOCK STRING,   TEST_NAME
     warnings_like BLOCK ARRAYREF, TEST_NAME
-        Tests to see that BLOCK gives exactly the number of the specificated
-        warnings and all the warnings have to match in the defined order to
-        the passed regexes.
-
-        Please read also the notes to warning_like as these methods are only
-        aliases.
-
-        Similar to "warnings_are", you can test for multiple warnings via
-        "carp" with: "warnings_like {foo()}
-        [qr/undefined/,qr/undefined/,{carped =" qr/no result/i}];>
-
-  EXPORT
-    "warning_is", "warnings_are", "warning_like", "warnings_like" by
-    default.
 
 SEE ALSO
     Have a look to the similar Test::Exception module.
 
 THANKS
-    Many thanks to Adrian Howard, Chromatic and Michael G. Schwern, who has
+    Many thanks to Adrian Howard, Chromatic and Michael G. Schwern, who all had
     given me a lot of ideas.
 
 AUTHOR
@@ -154,5 +73,4 @@ COPYRIGHT AND LICENSE
 
     This library is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.
-
 

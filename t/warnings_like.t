@@ -25,9 +25,7 @@ use constant TESTS =>(
 );
 use constant SUBTESTS_PER_TESTS  => 32;
 
-use constant EXTRA_TESTS         => 2;
-
-use Test::Builder::Tester tests  => TESTS() * SUBTESTS_PER_TESTS + EXTRA_TESTS;
+use Test::Builder::Tester tests  => TESTS() * SUBTESTS_PER_TESTS;
 use Test::Warn;
 
 Test::Builder::Tester::color 'on';
@@ -55,9 +53,6 @@ sub _create_exp_warning {
 
 my $i = 0;
 test_warnings_like(@$_) foreach TESTS();
-dies_ok {warnings_like {warn "1";} ["1"]} "no regexes used";
-dies_ok {warnings_like {warn "1"; warn "2";} ["1","2"]} "no regexes used";
-
 
 sub test_warnings_like {
     my ($ok, $msg, $exp_warning, $testname) = @_;

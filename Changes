@@ -1,5 +1,10 @@
 Revision history for Perl extension Test::Warn.
 
+0.05  Thu Jul 25
+        - implemented the warnings category feature
+          warning_like {foo()} 'syntax', "Test for any syntax warning, given by the standard perl distribution";
+        - added Tree::DAG_Node to the requirements
+
 0.04  Tue Jul 16
         - implemented the possibility of saying
           warning_like {foo()} {carped => ['x', 'y', 'z']}, "Warnings with x, y and z"

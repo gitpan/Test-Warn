@@ -18,9 +18,7 @@ use constant TESTS =>(
 );
 use constant SUBTESTS_PER_TESTS  => 12;
 
-use constant EXTRA_TESTS         => 1;
-
-use Test::Builder::Tester tests  => TESTS() * SUBTESTS_PER_TESTS + EXTRA_TESTS;
+use Test::Builder::Tester tests  => TESTS() * SUBTESTS_PER_TESTS;
 use Test::Exception;
 use Test::Warn;
 
@@ -47,8 +45,6 @@ sub _create_exp_warning {
 }
 
 test_warning_like(@$_) foreach TESTS();
-dies_ok (sub {warning_like {warn "no regexes should be found"} 'no regex'}, 
-         "Tried to call warning_like as regex");
 
 sub test_warning_like {
     my ($ok, $msg, $exp_warning, $testname) = @_;
