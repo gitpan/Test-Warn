@@ -1,0 +1,128 @@
+Test/Warn version 0.01
+======================
+
+INSTALLATION
+
+To install this module type the following:
+
+   perl Makefile.PL
+   make
+   make test
+   make install
+
+DEPENDENCIES
+
+This module requires these other modules and libraries:
+
+Test::Builder
+Test::Exception
+Array::Compare
+
+SYNOPSIS
+      use Test::Warn;
+
+      warning_is    {foo(-dri => "/")} "Unknown Parameter 'dri'", "dri != dir gives warning";
+      warnings_are  {bar(1,1)} ["Width very small", "Height very small"];
+  
+      warning_is    {add(2,2)} undef, "No warning to calc 2+2"; # or
+      warnings_are  {add(2,2)} [],    "No warning to calc 2+2"; # what reads better :-)
+  
+      warning_like  {foo(-dri => "/"} qr/unknown param/i, "an unknown parameter test";
+      warnings_like {bar(1,1)} [qr/width.*small/i, qr/height.*small/i];
+  
+      [NOT IMPLEMENTED YET]
+      warning_like {foo(undef)}                'uninitialized';
+      warning_like {bar(file => '/etc/passwd'} 'io';
+
+DESCRIPTION
+    This module provides a few convenience methods for testing warning based
+    code.
+
+    If you are not already familiar with the Test::More manpage now would be
+    the time to go take a look.
+
+  FUNCTIONS
+    warning_is BLOCK STRING, TEST_NAME
+        Tests that BLOCK gives exactly the one specificated warning. The
+        test fails if the BLOCK warns more then one times or doesn't warn.
+        If the string is undef, then the tests succeeds iff the BLOCK
+        doesn't give any warning. Another way to say that there aren't ary
+        warnings in the block, is "warnings_are {foo()} [], "no warnings
+        in"".
+
+        Note: "warn "foo"" would print something like "foo at -e line 1".
+        This method ignores everything after the at. That means, to match
+        this warning you would have to call "warning_is {warn "foo"} "foo",
+        "Foo succeeded"". If you need to test for a warning at an exactly
+        line, try better something like "warning_like {warn "foo"} qr/at
+        XYZ.dat line 5/".
+
+        warning_is and warning_are are only aliases to the same method. So
+        you also could write "warning_is {foo()} [], "no warning"" or
+        something similar. I decided me to give two methods to have some
+        better readable method names.
+
+        A true value is returned if the test succeeds, false otherwise.
+
+        The test name is optional, but recommended.
+
+    warnings_are BLOCK ARRAYREF, TEST_NAME
+        Tests to see that BLOCK gives exactly the specificated warnings. The
+        test fails if the BLOCK warns a different number than the size of
+        the ARRAYREf would have expected. If the ARRAYREF is equal to [],
+        then the test succeeds iff the BLOCK doesn't give any warning.
+
+        Please read also the notes to warning_is as these methods are only
+        aliases.
+
+    warning_like BLOCK REGEXP, TEST_NAME
+        Tests that BLOCK gives exactly one warning and it can be matched to
+        the given regexp. If the string is undef, then the tests succeeds
+        iff the BLOCK doesn't give any warning.
+
+        The REGEXP is matched after the whole warn line, which consists in
+        general of "WARNING at __FILE__ line __LINE__". So you can check for
+        a warning in at File Foo.pm line 5 with "warning_like {bar()} qr/at
+        Foo.pm line 5/, "Testname"". I don't know whether it's sensful to do
+        such a test :-( However, you should be prepared as a matching with
+        'at', 'file', '\d' or similar will always pass. Think to the
+        qr/^foo/ if you want to test for warning "foo something" in file
+        foo.pl.
+
+        You can also write the regexp in a string as "/.../" instead of
+        using the qr/.../ syntax. Note that the slashes are important in the
+        string, as strings without slashes are reserved for future versions
+        (to match warning categories as can be seen in the perllexwarn man
+        page).
+
+        Similar to "warning_is"/"warnings_are", "warning_like" and
+        "warnings_like" are only aliases to the same methods.
+
+        A true value is returned if the test succeeds, false otherwise.
+
+        The test name is optional, but recommended.
+
+    warnings_like BLOCK ARRAYREF, TEST_NAME
+        Tests to see that BLOCK gives exactly the number of the specificated
+        warnings and all the warnings have to match in the defined order to
+        the passed regexes.
+
+        Please read also the notes to warning_like as these methods are only
+        aliases.
+
+  EXPORT
+    "warning_is", "warnings_are", "warning_like", "warnings_like" by
+    default.
+
+SEE ALSO
+    Have a look to the similar Test::Exception module.
+
+AUTHOR
+    Janek Schleicher, <bigj@kamelfreund.de>
+
+COPYRIGHT AND LICENSE
+    Copyright 2002 by Janek Schleicher
+
+    This library is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
+

@@ -1,0 +1,6 @@
+Revision history for Perl extension Test::Warn.
+
+0.01  Wed Jul 10
+	- first CPAN release
+	- warning_is   / warning_are implemented
+        - warning_like / warnings_like implemented
