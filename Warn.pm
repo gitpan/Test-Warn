@@ -5,6 +5,8 @@ use strict;
 use warnings;
 
 use Array::Compare;
+use Sub::Uplevel;
+use List::Util qw/first/;
 
 require Exporter;
 
@@ -21,7 +23,7 @@ our @EXPORT = qw(
        warning_like warnings_like
 );
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use Test::Builder;
 my $Tester = Test::Builder->new;
@@ -30,15 +32,16 @@ my $Tester = Test::Builder->new;
 
 sub warnings_are (&$;$) {
     my $block       = shift;
-    my $exp_warning = shift() || [];
-    my @exp_warning = ref($exp_warning) eq 'ARRAY' ? @$exp_warning : ($exp_warning);
+    my @exp_warning = map {_canonical_exp_warning($_)}
+                          _to_array_if_necessary( shift() || [] );
     my $testname    = shift;
     my @got_warning = ();
-    local $SIG{__WARN__} = sub {push @got_warning, shift()};
-    &$block;
-    my $ok = Array::Compare->new()->compare(
-        \@exp_warning, [map {m/^(.*) at \S+ line \d+\.$/s} @got_warning]
-    );
+    local $SIG{__WARN__} = sub {
+        my ($called_from) = caller(0);  # to find out Carping methods
+        push @got_warning, _canonical_got_warning($called_from, shift());
+    };
+    uplevel 2,$block;
+    my $ok = _cmp_is( \@got_warning, \@exp_warning );
     $Tester->ok( $ok, $testname );
     $ok or _diag_found_warning(@got_warning),
            _diag_exp_warning(@exp_warning);
@@ -49,12 +52,15 @@ sub warnings_are (&$;$) {
 
 sub warnings_like (&$;$) {
     my $block       = shift;
-    my $exp_warning = shift() || [];
-    my @exp_warning = ref($exp_warning) eq 'ARRAY' ? @$exp_warning : ($exp_warning);
+    my @exp_warning = map {_canonical_exp_warning($_)}
+                          _to_array_if_necessary( shift() || [] );
     my $testname    = shift;
     my @got_warning = ();
-    local $SIG{__WARN__} = sub {push @got_warning, shift()};
-    &$block;
+    local $SIG{__WARN__} = sub {
+        my ($called_from) = caller(0);  # to find out Carping methods
+        push @got_warning, _canonical_got_warning($called_from, shift());
+    };
+    uplevel 2,$block;
     my $ok = _cmp_like( \@got_warning, \@exp_warning );
     $Tester->ok( $ok, $testname );
     $ok or _diag_found_warning(@got_warning),
@@ -62,24 +68,79 @@ sub warnings_like (&$;$) {
     return $ok;
 }
 
+
+sub _to_array_if_necessary {
+    return (ref($_[0]) eq 'ARRAY') ? @{$_[0]} : ($_[0]);
+}
+
+sub _canonical_got_warning {
+    my ($called_from, $msg) = @_;
+    my $warn_kind = $called_from eq 'Carp' ? 'carped' : 'warn';
+    return {$warn_kind => first {"$_\n"} split /\n/, $msg};
+}
+
+sub _canonical_exp_warning {
+    my ($exp) = @_;
+    return (ref($exp) eq 'HASH') ? $exp : +{'warn' => $exp};
+}
+
+sub _cmp_got_to_exp_warning {
+    my ($got_kind, $got_msg) = %{ shift() };
+    my ($exp_kind, $exp_msg) = %{ shift() };
+    return 0 if ($got_kind eq 'warn') && ($exp_kind eq 'carped');
+    my $cmp = $got_msg =~ /^\Q$exp_msg\E at \S+ line \d+\.?$/;
+    return $cmp;
+}
+
+sub _cmp_got_to_exp_warning_like {
+    my ($got_kind, $got_msg) = %{ shift() };
+    my ($exp_kind, $exp_msg) = %{ shift() };
+    return 0 if ($got_kind eq 'warn') && ($exp_kind eq 'carped');
+    my $re = $Tester->maybe_regex($exp_msg) or die "'$exp_msg' isn't a regex";
+    my $cmp = $got_msg =~ /$re/;
+    return $cmp;
+}
+
+
+sub _cmp_is {
+    my @got  = @{ shift() };
+    my @exp  = @{ shift() };
+    scalar @got == scalar @exp or return 0;
+    my $cmp = 1;
+    $cmp &&= _cmp_got_to_exp_warning($got[$_],$exp[$_]) for (0 .. $#got);
+    return $cmp;
+}
+
 sub _cmp_like {
     my @got  = @{ shift() };
     my @exp  = @{ shift() };
     scalar @got == scalar @exp or return 0;
-    for (0 .. $#got) {
-        my $re = $Tester->maybe_regex($exp[$_]) or die "'$exp[$_]' isn't a regex";
-        return 0 unless $got[$_] =~ /$re/;
-    }
-    return 1;
+    my $cmp = 1;
+    $cmp &&= _cmp_got_to_exp_warning_like($got[$_],$exp[$_]) for (0 .. $#got);
+    return $cmp;
 }
 
 sub _diag_found_warning {
-    $Tester->diag( "found warning: $_" ) for @_;
+    foreach (@_) {
+        if (ref($_) eq 'HASH') {
+            ${$_}{carped} ? $Tester->diag("found carped warning: ${$_}{carped}")
+                          : $Tester->diag("found warning: ${$_}{warn}");
+        } else {
+            $Tester->diag( "found warning: $_" );
+        }
+    }
     $Tester->diag( "didn't found a warning" ) unless @_;
 }
 
 sub _diag_exp_warning {
-    $Tester->diag( "expected to find warning: $_" ) for @_;
+    foreach (@_) {
+        if (ref($_) eq 'HASH') {
+            ${$_}{carped} ? $Tester->diag("expected to find carped warning: ${$_}{carped}")
+                          : $Tester->diag("expected to find warning: ${$_}{warn}");
+        } else {
+            $Tester->diag( "expected to find warning: $_" );
+        }
+    }
     $Tester->diag( "didn't expect to find a warning" ) unless @_;
 }
 
@@ -101,6 +162,9 @@ Test::Warn - Perl extension to test methods for warnings
   
   warning_like  {foo(-dri => "/"} qr/unknown param/i, "an unknown parameter test";
   warnings_like {bar(1,1)} [qr/width.*small/i, qr/height.*small/i];
+  
+  warning_is    {foo()} {carped => 'didn't found the right parameters'};
+  warnings_like {foo()} [qr/undefined/,qr/undefined/,{carped => qr/no result/i}];
   
   [NOT IMPLEMENTED YET]
   warning_like {foo(undef)}                'uninitialized';
@@ -125,6 +189,12 @@ If the string is undef,
 then the tests succeeds iff the BLOCK doesn't give any warning.
 Another way to say that there aren't ary warnings in the block,
 is C<warnings_are {foo()} [], "no warnings in">.
+
+If you want to test for a warning given by carp,
+You have to write something like:
+C<warning_is {carp "msg"} {carped => 'msg'}, "Test for a carped warning">.
+The test will fail,
+if a "normal" warning is found instead of a "carped" one.
 
 Note: C<warn "foo"> would print something like C<foo at -e line 1>. 
 This method ignores everything after the at. That means, to match this warning
@@ -152,6 +222,11 @@ then the test succeeds iff the BLOCK doesn't give any warning.
 
 Please read also the notes to warning_is as these methods are only aliases.
 
+At the moment,
+more than one tests for carped warnings look that way:
+C<warnings_are {carp "c1"; carp "c2"} [{carped => 'c1'},{carped => 'c2'}];>.
+I'm working for a better solution.
+
 =item warning_like BLOCK REGEXP, TEST_NAME
 
 Tests that BLOCK gives exactly one warning and it can be matched to the given regexp.
@@ -173,6 +248,10 @@ Note that the slashes are important in the string,
 as strings without slashes are reserved for future versions
 (to match warning categories as can be seen in the perllexwarn man page).
 
+Similar to C<warning_is>,
+you can test for warnings via C<carp> with:
+C<warning_like {bar()} {carped => qr/bar called too early/i};>
+
 Similar to C<warning_is>/C<warnings_are>,
 C<warning_like> and C<warnings_like> are only aliases to the same methods.
 
@@ -187,6 +266,10 @@ and all the warnings have to match in the defined order to the
 passed regexes.
 
 Please read also the notes to warning_like as these methods are only aliases.
+
+Similar to C<warnings_are>,
+you can test for multiple warnings via C<carp> with:
+C<warnings_like {foo()} [qr/undefined/,qr/undefined/,{carped => qr/no result/i}];>
 
 =back
 
@@ -212,18 +295,31 @@ my test warning methods won't get these warnings.
 
 =head1 TODO
 
+Improve this documentation.
+
+Allow to define to test for more then one carping more convienience,
+like: 
+
+  warnings_like {foo()} [qr/division by zero/i, 
+                         {carped => qr/no result/i,
+                                    qr/used default output/i}];
+
 C<warning_like BLOCK CATEGORY, TEST_NAME>
 where CATEGORY is a warning category defined in perllexwarn.
 
-Similar methods for C<Carp::carp> and C<Carp::clucks>.
-
-Will be soon done.
+The code has many parts doubled.
+This is really awkward and has to be changed.
 
 Please feel free to suggest me any improvements.
 
 =head1 SEE ALSO
 
 Have a look to the similar L<Test::Exception> module.
+
+=head1 THANKS
+
+Many thanks to Adrian Howard, Chromatic and Michael G. Schwern,
+who has given me a lot of ideas.
 
 =head1 AUTHOR
 

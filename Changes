@@ -1,5 +1,8 @@
 Revision history for Perl extension Test::Warn.
 
+0.02  Thu Jul 11
+        - implemented carped option to define a warning coming from carp
+
 0.01  Wed Jul 10
 	- first CPAN release
 	- warning_is   / warning_are implemented

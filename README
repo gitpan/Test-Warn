@@ -1,4 +1,4 @@
-Test/Warn version 0.01
+Test/Warn version 0.02
 ======================
 
 INSTALLATION
@@ -17,6 +17,8 @@ This module requires these other modules and libraries:
 Test::Builder
 Test::Exception
 Array::Compare
+Sub::Uplevel
+List::Util
 
 SYNOPSIS
       use Test::Warn;
@@ -29,6 +31,9 @@ SYNOPSIS
   
       warning_like  {foo(-dri => "/"} qr/unknown param/i, "an unknown parameter test";
       warnings_like {bar(1,1)} [qr/width.*small/i, qr/height.*small/i];
+  
+      warning_is    {foo()} {carped => 'didn't found the right parameters'};
+      warnings_like {foo()} [qr/undefined/,qr/undefined/,{carped => qr/no result/i}];
   
       [NOT IMPLEMENTED YET]
       warning_like {foo(undef)}                'uninitialized';
@@ -49,6 +54,11 @@ DESCRIPTION
         doesn't give any warning. Another way to say that there aren't ary
         warnings in the block, is "warnings_are {foo()} [], "no warnings
         in"".
+
+        If you want to test for a warning given by carp, You have to write
+        something like: "warning_is {carp "msg"} {carped =" 'msg'}, "Test
+        for a carped warning">. The test will fail, if a "normal" warning is
+        found instead of a "carped" one.
 
         Note: "warn "foo"" would print something like "foo at -e line 1".
         This method ignores everything after the at. That means, to match
@@ -75,6 +85,10 @@ DESCRIPTION
         Please read also the notes to warning_is as these methods are only
         aliases.
 
+        At the moment, more than one tests for carped warnings look that
+        way: "warnings_are {carp "c1"; carp "c2"} [{carped =" 'c1'},{carped
+        => 'c2'}];>. I'm working for a better solution.
+
     warning_like BLOCK REGEXP, TEST_NAME
         Tests that BLOCK gives exactly one warning and it can be matched to
         the given regexp. If the string is undef, then the tests succeeds
@@ -95,6 +109,9 @@ DESCRIPTION
         (to match warning categories as can be seen in the perllexwarn man
         page).
 
+        Similar to "warning_is", you can test for warnings via "carp" with:
+        "warning_like {bar()} {carped =" qr/bar called too early/i};>
+
         Similar to "warning_is"/"warnings_are", "warning_like" and
         "warnings_like" are only aliases to the same methods.
 
@@ -110,12 +127,48 @@ DESCRIPTION
         Please read also the notes to warning_like as these methods are only
         aliases.
 
+        Similar to "warnings_are", you can test for multiple warnings via
+        "carp" with: "warnings_like {foo()}
+        [qr/undefined/,qr/undefined/,{carped =" qr/no result/i}];>
+
   EXPORT
     "warning_is", "warnings_are", "warning_like", "warnings_like" by
     default.
 
+BUGS
+    This bad documentation, I'll make it better the next time.
+
+    I only tested it with the simple "warn" function. It should work also
+    with "Carp::carp" method, but I think, there will be problems using
+    <Carp::clucks> or any other warning that gives a devel stack.
+
+    If a method has it's own warn handler, overwriting $SIG{__WARN__}, my
+    test warning methods won't get these warnings.
+
+TODO
+    Improve this documentation.
+
+    Allow to define to test for more then one carping more convienience,
+    like:
+
+      warnings_like {foo()} [qr/division by zero/i, 
+                             {carped => qr/no result/i,
+                                        qr/used default output/i}];
+
+    "warning_like BLOCK CATEGORY, TEST_NAME" where CATEGORY is a warning
+    category defined in perllexwarn.
+
+    The code has many parts doubled. This is really awkward and has to be
+    changed.
+
+    Please feel free to suggest me any improvements.
+
 SEE ALSO
     Have a look to the similar Test::Exception module.
+
+THANKS
+    Many thanks to Adrian Howard, Chromatic and Michael G. Schwern, who has
+    given me a lot of ideas.
 
 AUTHOR
     Janek Schleicher, <bigj@kamelfreund.de>

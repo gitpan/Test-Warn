@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Test::Exception;
-
+use Carp;
 
 use constant TESTS =>(
     [    "ok", ["my warning"], ["my"], "standard warning to find"],
@@ -22,7 +22,7 @@ use constant TESTS =>(
     [    "ok", [('01' .. '99')], [('01' .. '99')], "many warnings ok"],
     ["not ok", [('01' .. '99')], [('01' .. '99'), '100'], "many, but diff. warnings"]
 );
-use constant SUBTESTS_PER_TESTS  => 8;
+use constant SUBTESTS_PER_TESTS  => 16;
 
 use constant EXTRA_TESTS         => 2;
 
@@ -32,11 +32,17 @@ use Test::Warn;
 Test::Builder::Tester::color 'on';
 
 use constant WARN_LINE => line_num +2; 
-sub make_warn {
-    warn $_ for @{$_[0]};
+sub _make_warn {
+    warn $_ for @_;
 }
 
-test_warnings_like(@$_) for TESTS();
+use constant CARP_LINE => line_num +2;
+sub _make_carp {
+    carp $_ for @_;
+}
+
+my $i = 0;
+test_warnings_like(@$_) foreach TESTS();
 dies_ok {warnings_like {warn "1";} ["1"]} "no regexes used";
 dies_ok {warnings_like {warn "1"; warn "2";} ["1","2"]} "no regexes used";
 
@@ -44,16 +50,22 @@ dies_ok {warnings_like {warn "1"; warn "2";} ["1","2"]} "no regexes used";
 sub test_warnings_like {
     my ($ok, $msg, $exp_warning, $testname) = @_;
     for my $regexes ([map {qr/$_/} @$exp_warning], [map {"/$_/"} @$exp_warning]) {
-        for (undef, $testname) {
-            for my $is_or_are (qw/is are/) {
-                test_out "$ok 1" . ($_ ? " - $_" : "");
-                if ($ok =~ /not/) {
-                    test_fail +4;
-                    test_diag  _found_warn_msg(@$msg);
-                    test_diag  _exp_warn_msg(@$regexes);
+        for my $do_carp (0,1) {
+            *_found_msg         = $do_carp ? *_found_carp_msg : *_found_warn_msg;
+            *_exp_msg           = $do_carp ? *_exp_carp_msg   : *_exp_warn_msg;
+            *_make_warn_or_carp = $do_carp ? *_make_carp      : *_make_warn;
+            for my $t (undef, $testname) {
+                for my $is_or_are (qw/is are/) {
+                    test_out "$ok 1" . ($t ? " - $t" : "");
+                    if ($ok =~ /not/) {
+                        test_fail +5;
+                        test_diag  _found_msg(@$msg);
+                        test_diag  _exp_msg(@$regexes);
+                    }
+                    my $ew = $do_carp ? [map { +{carped => $_} } @$regexes ] : $regexes;
+                    $is_or_are eq 'is' ? warning_like {_make_warn_or_carp(@$msg)} $ew, $t : warnings_like {_make_warn_or_carp(@$msg)} $ew, $t;
+                    test_test  "$testname (with" . ($t ? "" : "out") . " a testname)";
                 }
-                $is_or_are eq 'is' ? warning_like {make_warn($msg)} $regexes, $_ : warnings_like {make_warn($msg)} $regexes, $_;
-                test_test  "$testname (with" . ($_ ? "" : "out") . " a testname)";
             }
         }
     }
@@ -64,7 +76,18 @@ sub _found_warn_msg {
        : "didn't found a warning";
 }
 
+sub _found_carp_msg {
+    @_ ? map({"found carped warning: $_ at ". __FILE__ . " line " . CARP_LINE} @_)
+       : "didn't found a warning";
+}
+
+
 sub _exp_warn_msg {
     @_ ? map({"expected to find warning: $_" } @_)
+       : "didn't expect to find a warning";
+}
+
+sub _exp_carp_msg {
+    @_ ? map({"expected to find carped warning: $_" } @_)
        : "didn't expect to find a warning";
 }

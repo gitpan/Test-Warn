@@ -3,7 +3,9 @@
 use strict;
 use warnings;
 
-use constant SUBTESTS_PER_TESTS  => 2;
+use Carp;
+
+use constant SUBTESTS_PER_TESTS  => 4;
 
 use constant TESTS =>(
     ["ok", "my warning", "my warning", "standard warning to find"],
@@ -22,23 +24,34 @@ use Test::Warn;
 Test::Builder::Tester::color 'on';
 
 use constant WARN_LINE => line_num +2; 
-sub make_warn {
+sub _make_warn {
     warn $_ for grep $_, split m:\|:, (shift() || "");
 }
 
-test_warning_is(@$_) for TESTS();
+use constant CARP_LINE => line_num +2;
+sub _make_carp {
+    carp $_ for grep $_, split m:\|:, (shift() || "");
+}
+
+my $i = 0;
+test_warning_is(@$_) foreach  TESTS();
 
 sub test_warning_is {
     my ($ok, $msg, $exp_warning, $testname) = @_;
-    for (undef, $testname) {
-        test_out "$ok 1" . ($_ ? " - $_" : "");
-        if ($ok =~ /not/) {
-            test_fail +4;
-            test_diag  _found_warn_msg($_) for ($msg ? (split m-\|-, $msg) : $msg);
-            test_diag  _exp_warn_msg($exp_warning);
+    for my $do_carp (0,1) {
+        *_found_msg         = $do_carp ? *_found_carp_msg : *_found_warn_msg;
+        *_exp_msg           = $do_carp ? *_exp_carp_msg   : *_exp_warn_msg;
+        *_make_warn_or_carp = $do_carp ? *_make_carp      : *_make_warn;
+        for my $t (undef, $testname) {
+            test_out "$ok 1" . ($t ? " - $t" : "");
+            if ($ok =~ /not/) {
+                test_fail +4;
+                test_diag  _found_msg($_) for ($msg ? (split m-\|-, $msg) : $msg);
+                test_diag  _exp_msg($exp_warning);
+            }
+            warning_is {_make_warn_or_carp($msg)} (($do_carp && $exp_warning) ? {carped => $exp_warning} : $exp_warning), $t;
+            test_test  "$testname (with" . ($_ ? "" : "out") . " a testname)";
         }
-        warning_is {make_warn($msg)} $exp_warning, $_;
-        test_test  "$testname (with" . ($_ ? "" : "out") . " a testname)";
     }
 }
 
@@ -56,5 +69,22 @@ sub _found_warn_msg {
 sub _exp_warn_msg {
     defined($_[0]) 
         ? "expected to find warning: $_[0]"
+        : "didn't expect to find a warning";
+}
+
+sub _found_carp_msg {
+    defined($_[0]) 
+        ? ( join " " => ("found carped warning:",
+                         $_[0],
+                         "at",
+                         __FILE__,
+                         "line",
+                         CARP_LINE) )     # Note the difference, that carp msg
+        : "didn't found a warning";       # aren't finished by '.'
+}
+
+sub _exp_carp_msg {
+    defined($_[0]) 
+        ? "expected to find carped warning: $_[0]"
         : "didn't expect to find a warning";
 }
