@@ -1,5 +1,10 @@
 Revision history for Perl extension Test::Warn.
 
+0.09  Mar 15 2007
+        - new maintainer: Alexandr Ciornii
+        - license in Makefile.PL
+        - fixed carped.t (patch by PSINNOTT)
+
 0.08  Tue Sep 02 2003
         - fixed bug in warning_is, warnings_are when newlines are inside
 
@@ -14,12 +19,12 @@ Revision history for Perl extension Test::Warn.
           to remove Dependancy of Switch
         - fixed a typo in the doc
 
-0.05  Thu Jul 25
+0.05  Thu Jul 25 2002
         - implemented the warnings category feature
           warning_like {foo()} 'syntax', "Test for any syntax warning, given by the standard perl distribution";
         - added Tree::DAG_Node to the requirements
 
-0.04  Tue Jul 16
+0.04  Tue Jul 16 2002
         - implemented the possibility of saying
           warning_like {foo()} {carped => ['x', 'y', 'z']}, "Warnings with x, y and z"
           instead of
@@ -28,7 +33,7 @@ Revision history for Perl extension Test::Warn.
                                 {carped => 'z'}],           "Warnings with x, y and z, too"
         - added Dependancy to Switch
 
-0.03  Mon Jul 15
+0.03  Mon Jul 15 2002
         - removed bug that occured with some versions of perl
           Something something like
           use List::Util qw/first/;
@@ -36,10 +41,10 @@ Revision history for Perl extension Test::Warn.
           where the argument to first wasn't detected as a sub block
         - removed Dependency of List::Util
 
-0.02  Thu Jul 11
+0.02  Thu Jul 11 2002
         - implemented carped option to define a warning coming from carp
 
-0.01  Wed Jul 10
+0.01  Wed Jul 10 2002
 	- first CPAN release
 	- warning_is   / warning_are implemented
         - warning_like / warnings_like implemented

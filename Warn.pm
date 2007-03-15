@@ -228,6 +228,8 @@ use warnings;
 use Array::Compare;
 use Sub::Uplevel;
 
+our $VERSION = '0.09';
+
 require Exporter;
 
 our @ISA = qw(Exporter);
@@ -242,8 +244,6 @@ our @EXPORT = qw(
 	   warning_is   warnings_are
        warning_like warnings_like
 );
-
-our $VERSION = '0.08';
 
 use Test::Builder;
 my $Tester = Test::Builder->new;

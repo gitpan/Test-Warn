@@ -18,6 +18,7 @@ sub foo {
 
 use File::Spec;
 my $tcarped = File::Spec->catfile('t','carped.t');
+$tcarped =~ s/\\/\//g if $^O eq 'MSWin32';
 
 test_out "ok 1";
 warnings_like {foo()} [map {qr/$_/} (1 .. 4)];
