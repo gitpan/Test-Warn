@@ -10,6 +10,7 @@ use warnings;
 
 use Carp;
 
+#expected, warning text, expected, test name
 use constant TESTS =>(
     ["ok", "my warning", "my", "standard warning to find"],
     ["not ok", "my warning", "another", "another warning instead of my warning"],
@@ -23,7 +24,7 @@ use constant TESTS =>(
 use constant SUBTESTS_PER_TESTS  => 12;
 
 use Test::Builder::Tester tests  => TESTS() * SUBTESTS_PER_TESTS;
-use Test::Exception;
+#use Test::Exception;
 use Test::Warn;
 
 Test::Builder::Tester::color 'on';

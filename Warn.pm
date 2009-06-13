@@ -25,7 +25,11 @@ Test::Warn - Perl extension to test methods for warnings
                [qw/void uninitialized/], 
                "some warnings at compile time";
 
+  warning_exists {...} [qr/expected warning/], "Expected warning is thrown";
+
 =head1 DESCRIPTION
+
+Perl programming way is using big number of tests.
 
 This module provides a few convenience methods for testing warning based code.
 
@@ -41,8 +45,8 @@ now would be the time to go take a look.
 Tests that BLOCK gives exactly the one specificated warning.
 The test fails if the BLOCK warns more then one times or doesn't warn.
 If the string is undef, 
-then the tests succeeds iff the BLOCK doesn't give any warning.
-Another way to say that there aren't ary warnings in the block,
+then the tests succeeds if the BLOCK doesn't give any warning.
+Another way to say that there aren't any warnings in the block,
 is C<warnings_are {foo()} [], "no warnings in">.
 
 If you want to test for a warning given by carp,
@@ -60,7 +64,7 @@ try better something like C<warning_like {warn "foo"} qr/at XYZ.dat line 5/>.
 warning_is and warning_are are only aliases to the same method.
 So you also could write
 C<warning_is {foo()} [], "no warning"> or something similar.
-I decided me to give two methods to have some better readable method names.
+I decided to give two methods to have some better readable method names.
 
 A true value is returned if the test succeeds, false otherwise.
 
@@ -73,7 +77,7 @@ Tests to see that BLOCK gives exactly the specificated warnings.
 The test fails if the BLOCK warns a different number than the size of the ARRAYREf
 would have expected.
 If the ARRAYREF is equal to [], 
-then the test succeeds iff the BLOCK doesn't give any warning.
+then the test succeeds if the BLOCK doesn't give any warning.
 
 Please read also the notes to warning_is as these methods are only aliases.
 
@@ -122,7 +126,7 @@ like it is expressed in perllexwarn.
 Note, that they have the hierarchical structure from perl 5.8.0,
 wich has a little bit changed to 5.6.1 or earlier versions
 (You can access the internal used tree with C<$Test::Warn::Categorization::tree>, 
-allthough I wouldn't recommend it)
+although I wouldn't recommend it)
 
 Thanks to the grouping in a tree,
 it's simple possible to test for an 'io' warning,
@@ -162,6 +166,10 @@ and for warning categories, too:
                 ],
                 "I hope, you'll never have to write a test for so many warnings :-)";
 
+=item warning_exists BLOCK STRING|ARRAYREF, TEST_NAME
+
+Similar to warning_like but will warn all warnings that are not required by second parameter
+
 =back
 
 =head2 EXPORT
@@ -169,12 +177,13 @@ and for warning categories, too:
 C<warning_is>,
 C<warnings_are>,
 C<warning_like>,
+C<warning_exists>,
 C<warnings_like> by default.
 
 =head1 BUGS
 
 Please note that warnings with newlines inside are making a lot of trouble.
-The only sensful way to handle them is to use are the C<warning_like> or
+The only sensible way to handle them is to use are the C<warning_like> or
 C<warnings_like> methods. Background for these problems is that there is no
 really secure way to distinguish between warnings with newlines and a tracing
 stacktrace.
@@ -212,6 +221,7 @@ Janek Schleicher, E<lt>bigj AT kamelfreund.deE<gt>
 =head1 COPYRIGHT AND LICENSE
 
 Copyright 2002 by Janek Schleicher
+Copyright 2007-2009 by Alexandr Ciornii
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 
@@ -225,10 +235,10 @@ use 5.006;
 use strict;
 use warnings;
 
-use Array::Compare;
+#use Array::Compare;
 use Sub::Uplevel 0.12;
 
-our $VERSION = '0.11';
+our $VERSION = '0.11_01';
 
 require Exporter;
 
@@ -243,6 +253,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
     warning_is   warnings_are
     warning_like warnings_like
+    warning_exists
 );
 
 use Test::Builder;
@@ -288,6 +299,32 @@ sub warnings_like (&$;$) {
     return $ok;
 }
 
+sub warning_exists (&$;$) {
+    my $block       = shift;
+    my @exp_warning = map {_canonical_exp_warning($_)}
+                          _to_array_if_necessary( shift() || [] );
+    my $testname    = shift;
+    my @got_warning = ();
+    local $SIG{__WARN__} = sub {
+        my ($called_from) = caller(0);  # to find out Carping methods
+        my $wrn_text=shift;
+        my $wrn_rec=_canonical_got_warning($called_from, $wrn_text);
+        foreach my $wrn (@exp_warning) {
+          if (_cmp_got_to_exp_warning_like($wrn_rec,$wrn)) {
+            push @got_warning, $wrn_rec;
+            return;
+          }
+        }
+        warn $wrn_text;
+    };
+    uplevel 1,$block;
+    my $ok = _cmp_like( \@got_warning, \@exp_warning );
+    $Tester->ok( $ok, $testname );
+    $ok or _diag_found_warning(@got_warning),
+           _diag_exp_warning(@exp_warning);
+    return $ok;
+}
+
 
 sub _to_array_if_necessary {
     return (ref($_[0]) eq 'ARRAY') ? @{$_[0]} : ($_[0]);
@@ -315,7 +352,7 @@ sub _cmp_got_to_exp_warning {
     my ($got_kind, $got_msg) = %{ shift() };
     my ($exp_kind, $exp_msg) = %{ shift() };
     return 0 if ($got_kind eq 'warn') && ($exp_kind eq 'carped');
-    my $cmp = $got_msg =~ /^\Q$exp_msg\E at \S+ line \d+\.?$/;
+    my $cmp = $got_msg =~ /^\Q$exp_msg\E at .+ line \d+\.?$/;
     return $cmp;
 }
 
@@ -323,7 +360,7 @@ sub _cmp_got_to_exp_warning_like {
     my ($got_kind, $got_msg) = %{ shift() };
     my ($exp_kind, $exp_msg) = %{ shift() };
     return 0 if ($got_kind eq 'warn') && ($exp_kind eq 'carped');
-    if (my $re = $Tester->maybe_regex($exp_msg)) {
+    if (my $re = $Tester->maybe_regex($exp_msg)) { #qr// or '//'
         my $cmp = $got_msg =~ /$re/;
         return $cmp;
     } else {
@@ -471,7 +508,7 @@ our $tree = Tree::MyDAG_Node->nice_lol_to_tree(
 );
 
 sub _warning_category_regexp {
-    my $sub_tree = $tree->depthsearch(shift()) or return undef;
+    my $sub_tree = $tree->depthsearch(shift()) or return;
     my $re = join "|", map {$_->name} $sub_tree->leaves_under;
     return qr/(?=\w)$re/;
 }
@@ -479,7 +516,7 @@ sub _warning_category_regexp {
 sub warning_like_category {
     my ($warning, $category) = @_;
     my $re = _warning_category_regexp($category) or 
-        carp("Unknown warning category '$category'"),return undef;
+        carp("Unknown warning category '$category'"),return;
     my $ok = $warning =~ /$re/;
     return $ok;
 }
