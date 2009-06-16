@@ -25,7 +25,7 @@ Test::Warn - Perl extension to test methods for warnings
                [qw/void uninitialized/], 
                "some warnings at compile time";
 
-  warning_exists {...} [qr/expected warning/], "Expected warning is thrown";
+  warnings_exists {...} [qr/expected warning/], "Expected warning is thrown";
 
 =head1 DESCRIPTION
 
@@ -166,9 +166,13 @@ and for warning categories, too:
                 ],
                 "I hope, you'll never have to write a test for so many warnings :-)";
 
-=item warning_exists BLOCK STRING|ARRAYREF, TEST_NAME
+=item warnings_exists BLOCK STRING|ARRAYREF, TEST_NAME
 
-Similar to warning_like but will warn all warnings that are not required by second parameter
+Same as warning_like but will warn all warnings that are not required by second parameter
+
+  warnings_exists {...} [qr/expected warning/], "Expected warning is thrown";
+
+  warnings_exists {...} ['uninitialized'], "Expected warning is thrown";
 
 =back
 
@@ -177,8 +181,8 @@ Similar to warning_like but will warn all warnings that are not required by seco
 C<warning_is>,
 C<warnings_are>,
 C<warning_like>,
-C<warning_exists>,
-C<warnings_like> by default.
+C<warnings_like>,
+C<warnings_exists> by default.
 
 =head1 BUGS
 
@@ -221,7 +225,8 @@ Janek Schleicher, E<lt>bigj AT kamelfreund.deE<gt>
 =head1 COPYRIGHT AND LICENSE
 
 Copyright 2002 by Janek Schleicher
-Copyright 2007-2009 by Alexandr Ciornii
+
+Copyright 2007-2009 by Alexandr Ciornii, L<http://chorny.net/>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 
@@ -238,7 +243,7 @@ use warnings;
 #use Array::Compare;
 use Sub::Uplevel 0.12;
 
-our $VERSION = '0.11_01';
+our $VERSION = '0.11_02';
 
 require Exporter;
 
@@ -253,7 +258,7 @@ our @EXPORT_OK = ( @{ $EXPORT_TAGS{'all'} } );
 our @EXPORT = qw(
     warning_is   warnings_are
     warning_like warnings_like
-    warning_exists
+    warnings_exists
 );
 
 use Test::Builder;
@@ -299,7 +304,7 @@ sub warnings_like (&$;$) {
     return $ok;
 }
 
-sub warning_exists (&$;$) {
+sub warnings_exists (&$;$) {
     my $block       = shift;
     my @exp_warning = map {_canonical_exp_warning($_)}
                           _to_array_if_necessary( shift() || [] );
