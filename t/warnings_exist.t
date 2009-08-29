@@ -6,11 +6,12 @@ use warnings;
 use Carp;
 use Test::More qw(no_plan);
 
-my $file="t/warnings_exists1.pl";
+my $file="t/warnings_exist1.pl";
 my $output=`$^X -Mblib $file 2>&1`;
 $output=~s/^#.*$//gm;
 $output=~s/\n{2,}/\n/gs;
 my @lines=split /[\n\r]+/,$output;
+shift @lines if $lines[0]=~/^Using /; #extra line in perl 5.6.2
 #print $output;
 my @expected=(
 "warn_2 at $file line 12.",
