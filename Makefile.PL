@@ -12,7 +12,7 @@ WriteMakefile1(
                             'Test::Builder'         => 0.13,
                             'Test::Builder::Tester' => 1.02,
                             'Sub::Uplevel'          => 0.12,
-                            'Tree::DAG_Node'        => 0,
+                            'Tree::DAG_Node'        => 1.02,
                             },
     'BUILD_REQUIRES'    => {
                             'File::Spec'            => 0,
@@ -28,6 +28,13 @@ WriteMakefile1(
       },
       keywords => ['testing','warnings'],
     },
+    PL_FILES => {},
+    $^O =~/win/i ? (
+        dist => {
+            TAR      => 'ptar',
+            TARFLAGS => '-c -C -f',
+        },
+    ) : (),
 );
 
 sub WriteMakefile1 {
@@ -36,9 +43,7 @@ sub WriteMakefile1 {
         $eumm_version=eval $eumm_version;
         die "EXTRA_META is deprecated" if exists $params{EXTRA_META};
         die "License not specified" if not exists $params{LICENSE};
-        if ($params{BUILD_REQUIRES}) { #and $eumm_version < 6.5503
-            #Should be modified in future when EUMM will
-            #correctly support BUILD_REQUIRES.
+        if ($params{BUILD_REQUIRES} and $eumm_version < 6.5503) {
             #EUMM 6.5502 has problems with BUILD_REQUIRES
             $params{PREREQ_PM}={ %{$params{PREREQ_PM} || {}} , %{$params{BUILD_REQUIRES}} };
             delete $params{BUILD_REQUIRES};

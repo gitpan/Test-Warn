@@ -9,8 +9,8 @@ Test::Warn - Perl extension to test methods for warnings
   warning_is    {foo(-dri => "/")} "Unknown Parameter 'dri'", "dri != dir gives warning";
   warnings_are  {bar(1,1)} ["Width very small", "Height very small"];
 
-  warning_is    {add(2,2)} undef, "No warning to calc 2+2"; # or
-  warnings_are  {add(2,2)} [],    "No warning to calc 2+2"; # what reads better :-)
+  warning_is    {add(2,2)} undef, "No warnings for calc 2+2"; # or
+  warnings_are  {add(2,2)} [],    "No warnings for calc 2+2"; # what reads better :-)
 
   warning_like  {foo(-dri => "/")} qr/unknown param/i, "an unknown parameter test";
   warnings_like {bar(1,1)} [qr/width.*small/i, qr/height.*small/i];
@@ -42,7 +42,7 @@ now would be the time to go take a look.
 
 =item warning_is BLOCK STRING, TEST_NAME
 
-Tests that BLOCK gives exactly the one specificated warning.
+Tests that BLOCK gives exactly the one specified warning.
 The test fails if the BLOCK warns more then one times or doesn't warn.
 If the string is undef, 
 then the tests succeeds if the BLOCK doesn't give any warning.
@@ -73,7 +73,7 @@ The test name is optional, but recommended.
 
 =item warnings_are BLOCK ARRAYREF, TEST_NAME
 
-Tests to see that BLOCK gives exactly the specificated warnings.
+Tests to see that BLOCK gives exactly the specified warnings.
 The test fails if the BLOCK warns a different number than the size of the ARRAYREf
 would have expected.
 If the ARRAYREF is equal to [], 
@@ -148,7 +148,7 @@ created with warnings::register.
 
 =item warnings_like BLOCK ARRAYREF, TEST_NAME
 
-Tests to see that BLOCK gives exactly the number of the specificated warnings
+Tests to see that BLOCK gives exactly the number of the specified warnings
 and all the warnings have to match in the defined order to the 
 passed regexes.
 
@@ -246,7 +246,7 @@ use warnings;
 #use Array::Compare;
 use Sub::Uplevel 0.12;
 
-our $VERSION = '0.21';
+our $VERSION = '0.22';
 
 require Exporter;
 
@@ -407,7 +407,7 @@ sub _diag_found_warning {
             $Tester->diag( "found warning: $_" );
         }
     }
-    $Tester->diag( "didn't found a warning" ) unless @_;
+    $Tester->diag( "didn't find a warning" ) unless @_;
 }
 
 sub _diag_exp_warning {
