@@ -12,6 +12,8 @@ $output=~s/^#.*$//gm;
 $output=~s/\n{2,}/\n/gs;
 my @lines=split /[\n\r]+/,$output;
 shift @lines if $lines[0]=~/^Using /; #extra line in perl 5.6.2
+shift @lines if $lines[0]=~/^TAP version /; #extra line in new TAP
+
 #print $output;
 my @expected=(
 "warn_2 at $file line 12.",
@@ -28,7 +30,7 @@ qr/^Use of uninitialized value (?:\$a\s+)?in addition \(\+\) at \Q$file\E line 3
 '1..6'
 );
 foreach my $i (0..$#expected) {
-  if ($expected[$i]=~/^\(\?\w*-\w*:/) {
+  if ($expected[$i]=~/^\(\?\^?\w*-?\w*:/) {
     like($lines[$i],$expected[$i]);
   } else {
     is($lines[$i],$expected[$i]);
