@@ -20,7 +20,7 @@ sub foo {
 #my $tcarped = File::Spec->catfile('t','carped.t');
 #$tcarped =~ s/\\/\//g if $^O eq 'MSWin32';
 #also will not work on VMS
-my $tcarped = 't/carped.t';
+my $tcarped = $0; #'t/carped.t';
 
 test_out "ok 1";
 warnings_like {foo()} [map {qr/$_/} (1 .. 4)];
@@ -29,8 +29,8 @@ test_test "Warnings and Carpings mixed, asked only for like warnings";
 test_out "not ok 1";
 my @test_diag = (
 "found warning: Warning 1 at $tcarped line 13.",
-"found carped warning: Carping 2 at $tcarped line 14",
-"found carped warning: Carping 3 at $tcarped line 15",
+"found carped warning: Carping 2 at $tcarped line 14".($Carp::VERSION gt "1.24"?".":""),
+"found carped warning: Carping 3 at $tcarped line 15".($Carp::VERSION gt "1.24"?".":""),
 "found warning: Warning 4 at $tcarped line 16.",
 "expected to find carped warning: (?-xism:1)",
 "expected to find carped warning: (?-xism:2)",
@@ -56,8 +56,8 @@ test_out "not ok 1";
 test_fail +10;
 test_diag 
 "found warning: Warning 1 at $tcarped line 13.",
-"found carped warning: Carping 2 at $tcarped line 14",
-"found carped warning: Carping 3 at $tcarped line 15",
+"found carped warning: Carping 2 at $tcarped line 14".($Carp::VERSION gt "1.24"?".":""),
+"found carped warning: Carping 3 at $tcarped line 15".($Carp::VERSION gt "1.24"?".":""),
 "found warning: Warning 4 at $tcarped line 16.",
 "expected to find carped warning: Warning 1",
 "expected to find carped warning: Carping 2",
