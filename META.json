@@ -46,11 +46,11 @@
          }
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "repository" : {
          "url" : "http://github.com/chorny/test-warn/tree"
       }
    },
-   "version" : "0.23_01"
+   "version" : "0.24"
 }

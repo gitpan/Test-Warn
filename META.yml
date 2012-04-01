@@ -30,4 +30,4 @@ requires:
   perl: 5.006
 resources:
   repository: http://github.com/chorny/test-warn/tree
-version: 0.23_01
+version: 0.24
