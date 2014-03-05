@@ -95,7 +95,7 @@ The REGEXP is matched against the whole warning line,
 which in general has the form "WARNING at __FILE__ line __LINE__".
 So you can check for a warning in the file Foo.pm on line 5 with
 C<warning_like {bar()} qr/at Foo.pm line 5/, "Testname">.
-I don't know whether it's sensful to do such a test :-(
+I don't know whether it makes sense to do such a test :-(
 However, you should be prepared as a matching with 'at', 'file', '\d'
 or similar will always pass. 
 Think to the qr/^foo/ if you want to test for warning "foo something" in file foo.pl.
@@ -122,17 +122,15 @@ The test name is optional, but recommended.
 Tests whether a BLOCK gives exactly one warning of the passed category.
 The categories are grouped in a tree,
 like it is expressed in perllexwarn.
-Note, that they have the hierarchical structure from perl 5.8.0,
-wich has a little bit changed to 5.6.1 or earlier versions
-(You can access the internal used tree with C<$Test::Warn::Categorization::tree>, 
-although I wouldn't recommend it)
+Also see L</BUGS AND LIMITATIONS>.
+
 
 Thanks to the grouping in a tree,
 it's simple possible to test for an 'io' warning,
 instead for testing for a 'closed|exec|layer|newline|pipe|unopened' warning.
 
-Note, that warnings occuring at compile time,
-can only be catched in an eval block. So
+Note, that warnings occurring at compile time,
+can only be caught in an eval block. So
 
   warning_like {eval q/"$x"; $x;/} 
                [qw/void uninitialized/], 
@@ -186,7 +184,14 @@ C<warning_like>,
 C<warnings_like>,
 C<warnings_exist> by default.
 
-=head1 BUGS
+=head1 BUGS AND LIMITATIONS
+
+Category check is done as qr/category_name/. In some case this works, like for
+category 'uninitialized'. For 'utf8' it does not work. Perl does not have a list
+of warnings, so it is not possible to generate one for Test::Warn.
+If you want to add a warning to a category, send a pull request. Modifications
+should be done to %warnings_in_category. You should look into perl source to check
+how warning is looking exactly.
 
 Please note that warnings with newlines inside are making a lot of trouble.
 The only sensible way to handle them is to use are the C<warning_like> or
@@ -228,7 +233,7 @@ Janek Schleicher, E<lt>bigj AT kamelfreund.deE<gt>
 
 Copyright 2002 by Janek Schleicher
 
-Copyright 2007-2011 by Alexandr Ciornii, L<http://chorny.net/>
+Copyright 2007-2014 by Alexandr Ciornii, L<http://chorny.net/>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself. 
@@ -245,7 +250,7 @@ use warnings;
 #use Array::Compare;
 use Sub::Uplevel 0.12;
 
-our $VERSION = '0.24';
+our $VERSION = '0.30';
 
 require Exporter;
 
@@ -421,106 +426,31 @@ sub _diag_exp_warning {
     $Tester->diag( "didn't expect to find a warning" ) unless @_;
 }
 
-package Test::Warn::DAG_Node_Tree;
-
-use strict;
-use warnings;
-use base 'Tree::DAG_Node';
-
-
-sub nice_lol_to_tree {
-    my $class = shift;
-    $class->new(
-    {
-        name      => shift(),
-        daughters => [_nice_lol_to_daughters(shift())]
-    });
-}
-
-sub _nice_lol_to_daughters {
-    my @names = @{ shift() };
-    my @daughters = ();
-    my $last_daughter = undef;
-    foreach (@names) {
-        if (ref($_) ne 'ARRAY') {
-            $last_daughter = Tree::DAG_Node->new({name => $_});
-            push @daughters, $last_daughter;
-        } else {
-            $last_daughter->add_daughters(_nice_lol_to_daughters($_));
-        }
-    }
-    return @daughters;
-}
-
-sub depthsearch {
-    my ($self, $search_name) = @_;
-    my $found_node = undef;
-    $self->walk_down({callback => sub {
-        my $node = shift();
-        $node->name eq $search_name and $found_node = $node,!"go on";
-        "go on with searching";
-    }});
-    return $found_node;
-}
-
 package Test::Warn::Categorization;
 
 use Carp;
 
-our $tree = Test::Warn::DAG_Node_Tree->nice_lol_to_tree(
-   all => [ 'closure',
-            'deprecated',
-            'exiting',
-            'glob',
-            'io'           => [ 'closed',
-                                'exec',
-                                'layer',
-                                'newline',
-                                'pipe',
-                                'unopened'
-                              ],
-            'misc',
-            'numeric',
-            'once',
-            'overflow',
-            'pack',
-            'portable',
-            'recursion',
-            'redefine',
-            'regexp',
-            'severe'       => [ 'debugging',
-                                'inplace',
-                                'internal',
-                                'malloc'
-                              ],
-            'signal',
-            'substr',
-            'syntax'       => [ 'ambiguous',
-                                'bareword',
-                                'digit',
-                                'parenthesis',
-                                'precedence',
-                                'printf',
-                                'prototype',
-                                'qw',
-                                'reserved',
-                                'semicolon'
-                              ],
-            'taint',
-            'threads',
-            'uninitialized',
-            'unpack',
-            'untie',
-            'utf8',
-            'void',
-            'y2k'
-           ]
+my $bits = \%warnings::Bits;
+my @warnings = sort grep {
+  my $warn_bits = $bits->{$_};
+  #!grep { $_ ne $warn_bits && ($_ & $warn_bits) eq $_ } values %$bits;
+} keys %$bits;
+
+my %warnings_in_category = (
+  'utf8' => ['Wide character in \w+\b',],
 );
 
 sub _warning_category_regexp {
-    my $sub_tree = $tree->depthsearch(shift()) or return;
-    my $re = join "|", map {$_->name} $sub_tree->leaves_under;
-    return qr/(?=\w)$re/;
+    my $category = shift;
+    my $category_bits = $bits->{$category} or return;
+    my @category_warnings
+      = grep { ($bits->{$_} & $category_bits) eq $bits->{$_} } @warnings;
+
+    my @list = 
+      map { exists $warnings_in_category{$_}? (@{ $warnings_in_category{$_}}) : ($_) }
+      @category_warnings;
+    my $re = join "|", @list;
+    return qr/$re/;
 }
 
 sub warning_like_category {

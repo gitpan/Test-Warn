@@ -13,7 +13,6 @@ WriteMakefile1(
                             'Test::Builder'         => 0.13,
                             'Test::Builder::Tester' => 1.02,
                             'Sub::Uplevel'          => 0.12,
-                            'Tree::DAG_Node'        => 1.02,
                             'Carp'                  => 1.22,
                             },
     'BUILD_REQUIRES'    => {
@@ -25,7 +24,7 @@ WriteMakefile1(
     AUTHOR        => 'Alexandr Ciornii <alexchorny'.'@gmail.com>',
     META_MERGE => {
       resources => {
-        repository => 'http://github.com/chorny/test-warn/tree',
+        repository => 'https://github.com/chorny/test-warn',
       },
       keywords => ['testing','warnings'],
     },
